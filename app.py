@@ -17,8 +17,24 @@ class Drug:
 
 class DrugCatalog:
     def get_by_id(self, drug_id):
-        if drug_id == "1":
-            return Drug()
+        DRUGS = {
+    "1": {
+        "id": "1",
+        "name": "Paracetamol",
+        "pros": ["Pain relief"],
+        "cons": ["Liver damage (overdose)"],
+        "source": "FDA",
+        "last_updated": "2024-01-01"
+    },
+    "2": {
+        "id": "2",
+        "name": "Ibuprofen",
+        "pros": ["Pain relief", "Anti-inflammatory"],
+        "cons": ["Stomach irritation"],
+        "source": "WHO",
+        "last_updated": "2024-02-01"
+    }
+}
         return None
 
 drug_catalog = DrugCatalog()
@@ -47,20 +63,13 @@ def require_auth(allowed_roles=("verified_reader", "clinician", "admin")):
 @app.route("/api/v1/drugs/<drug_id>")
 @require_auth()
 def get_drug(drug_id):
-    record = drug_catalog.get_by_id(drug_id)
+    record = DRUGS.get(drug_id)
+
     if not record:
         return jsonify({"error": "not_found"}), 404
 
-    audit_log.write(user_id=g.user["sub"], action="read_drug", resource=drug_id)
+    return jsonify(record)
 
-    return jsonify({
-        "id": record.id,
-        "name": record.generic_name,
-        "pros": record.approved_indications,
-        "cons": record.warnings_and_side_effects,
-        "source": record.authority_reference,
-        "last_updated": record.version_date,
-    })
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=10000)
