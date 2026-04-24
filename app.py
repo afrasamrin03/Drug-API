@@ -1,23 +1,12 @@
-from functools import wraps
-from flask import Flask, request, jsonify, g
+from flask import Flask, request, jsonify
+import os
 
 app = Flask(__name__)
 
-def verify_jwt(token):
-    return {"sub": "user123", "role": "admin"}
-
-class Drug:
-    def __init__(self):
-        self.id = "1"
-        self.generic_name = "Paracetamol"
-        self.approved_indications = ["Pain relief"]
-        self.warnings_and_side_effects = ["Liver damage (overdose)"]
-        self.authority_reference = "FDA"
-        self.version_date = "2024-01-01"
-
-class DrugCatalog:
-    def get_by_id(self, drug_id):
-        DRUGS = {
+# ------------------------------
+# Sample Data (Temporary DB)
+# ------------------------------
+DRUGS = {
     "1": {
         "id": "1",
         "name": "Paracetamol",
@@ -35,31 +24,22 @@ class DrugCatalog:
         "last_updated": "2024-02-01"
     }
 }
-        return None
 
-drug_catalog = DrugCatalog()
+# ------------------------------
+# Routes
+# ------------------------------
 
-class AuditLog:
-    def write(self, **kwargs):
-        print("Audit:", kwargs)
+# Home
+@app.route("/")
+def home():
+    return "Drug API is running"
 
-audit_log = AuditLog()
+# Get all drugs
+@app.route("/api/v1/drugs")
+def get_all_drugs():
+    return jsonify(list(DRUGS.values()))
 
-def require_auth(allowed_roles=("verified_reader", "clinician", "admin")):
-    def decorator(f):
-        @wraps(f)
-        def wrapped(*args, **kwargs):
-            token = request.headers.get("Authorization", "").replace("Bearer ", "")
-            user = verify_jwt(token)
-
-            if not user or user["role"] not in allowed_roles:
-                return jsonify({"error": "forbidden"}), 403
-
-            g.user = user
-            return f(*args, **kwargs)
-        return wrapped
-    return decorator
-
+# Get one drug
 @app.route("/api/v1/drugs/<drug_id>")
 def get_drug(drug_id):
     record = DRUGS.get(drug_id)
@@ -70,8 +50,29 @@ def get_drug(drug_id):
     return jsonify(record)
 @app.route("/")
 def home():
-    return "Drug API is running"
+    return jsonify({
+        "message": "Drug API is running",
+        "endpoints": [
+            "/api/v1/drugs",
+            "/api/v1/drugs/<id>",
+            "/api/v1/search?q=name"
+        ]
+    })
+# Search drugs
+@app.route("/api/v1/search")
+def search_drugs():
+    query = request.args.get("q", "").lower()
 
+    results = [
+        drug for drug in DRUGS.values()
+        if query in drug["name"].lower()
+    ]
 
+    return jsonify(results)
+
+# ------------------------------
+# Run App
+# ------------------------------
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=10000)
+    port = int(os.environ.get("PORT", 10000))
+    app.run(host="0.0.0.0", port=port)
