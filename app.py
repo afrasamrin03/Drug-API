@@ -29,10 +29,6 @@ DRUGS = {
 # Routes
 # ------------------------------
 
-# Home
-@app.route("/")
-def home():
-    return "Drug API is running"
 
 # Get all drugs
 @app.route("/api/v1/drugs")
